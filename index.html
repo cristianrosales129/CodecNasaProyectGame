@@ -1,256 +1,1146 @@
-
 <!DOCTYPE html>
-<!-- Indica que el documento utiliza HTML5 -->
-
 <html lang="es">
-<!-- Elemento raíz del documento. lang="es" indica que el contenido está en español -->
-
 <head>
-    <!-- Contiene información y configuraciones generales de la página -->
-
     <meta charset="UTF-8">
-    <!-- Permite utilizar caracteres especiales como ñ, acentos y símbolos -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Codec</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0b0f19;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            color: #fff;
+        }
 
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Adapta el ancho de la página al dispositivo donde se visualiza.
-         initial-scale=1 establece el zoom inicial al 100% -->
+        #escena {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
 
-    <title>Misión Orbital · Órbita_CodecSystem</title>
-    <!-- Define el título que aparece en la pestaña del navegador -->
+        .capa {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+        }
 
-    <link rel="stylesheet" href="css/style.css">
-    <!-- Conecta el documento HTML con la hoja de estilos CSS.
-         Aquí se define el diseño, colores, tamaños y distribución visual -->
+        .oculto { display: none !important; }
 
+        /* ---------- Pantalla de inicio ---------- */
+        #inicio {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 12vh;
+            text-align: center;
+        }
+
+        .portada {
+            pointer-events: auto;
+            width: min(90vw, 440px);
+            padding: 28px 24px;
+            background: rgba(15, 23, 42, 0.82);
+            border: 1px solid #38bdf8;
+            border-radius: 16px;
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+            backdrop-filter: blur(4px);
+        }
+
+        .portada h1 {
+            margin: 0 0 10px;
+            font-size: clamp(1.8rem, 6vw, 2.4rem);
+            font-weight: 800;
+            background: linear-gradient(90deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .portada p {
+            margin: 0 0 22px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .btn-despegar {
+            font: inherit;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.04em;
+            color: #fff;
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border: 3px solid #fca5a5;
+            border-radius: 999px;
+            padding: 14px 38px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.4), inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn-despegar:hover { filter: brightness(1.08); }
+        .btn-despegar:active {
+            transform: translateY(3px);
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* ---------- Cuenta regresiva ---------- */
+        #cuenta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(5rem, 22vw, 10rem);
+            font-weight: 800;
+            text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+        }
+        #cuenta.texto { font-size: clamp(2.6rem, 11vw, 5rem); }
+        #cuenta.pulso { animation: pulso 0.9s ease-out; }
+
+        @keyframes pulso {
+            from { transform: scale(1.6); opacity: 0; }
+            25%  { opacity: 1; }
+            to   { transform: scale(1); opacity: 0.9; }
+        }
+
+        /* ---------- Altitud ---------- */
+        #hud {
+            padding: 20px;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+        }
+        #hud .etiqueta { font-size: 1.1rem; font-weight: 700; }
+        #altitud { font-size: 2.2rem; font-family: ui-monospace, 'SF Mono', Consolas, monospace; }
+        #hud .meta { font-size: 0.85rem; color: #d1d5db; }
+
+        /* ---------- Saltar intro ---------- */
+        #saltar {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 5;
+            font: inherit;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(226, 232, 240, 0.4);
+            border-radius: 999px;
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+        #saltar:hover { background: rgba(15, 23, 42, 0.9); }
+
+        button:focus-visible {
+            outline: 3px solid #fde047;
+            outline-offset: 3px;
+        }
+
+        /* ---------- Fundido a negro ---------- */
+        #fundido {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+        #fundido.visible { opacity: 1; pointer-events: auto; }
+
+        @media (prefers-reduced-motion: reduce) {
+            #cuenta.pulso { animation: none; }
+        }
+    </style>
 </head>
+<body>
 
-<body data-mode="explorer">
-<!-- Contiene todos los elementos visibles de la página web.
-         data-mode indica el modo de juego: "explorer" (niños) o "engineer" (ingeniero).
-         learn.js lo cambia y el CSS muestra u oculta controles según su valor -->
+    <canvas id="escena"></canvas>
 
-    <main class="layout">
-    <!-- Contenedor principal de la aplicación.
-         La clase layout permite aplicar estilos mediante CSS -->
+    <!-- Pantalla de inicio -->
+    <div id="inicio" class="capa">
+        <div class="portada">
+            <h1>Sistema de calculo de misiones</h1>
+            <p>El cohete está listo en la plataforma. Cuando quieras, inicia el despegue.</p>
+            <button id="btnDespegar" class="btn-despegar">Play</button>
+        </div>
+    </div>
 
-        <section class="map-wrap">
-        <!-- Sección destinada a mostrar el mapa del sistema solar -->
+    <!-- Cuenta regresiva -->
+    <div id="cuenta" class="capa oculto" aria-live="assertive"></div>
 
-            <canvas id="map" aria-label="Mapa 2D del sistema solar"></canvas>
-            <!-- Canvas es un área de dibujo donde JavaScript puede representar
-                 gráficamente los planetas, órbitas y elementos del sistema solar.
+    <!-- Altitud -->
+    <div id="hud" class="capa oculto">
+        <div class="etiqueta">ALTITUD</div>
+        <div id="altitud">0 km</div>
+        <div class="meta">Meta: 100 km</div>
+    </div>
 
-                 id="map" permite identificarlo desde JavaScript.
-                 aria-label proporciona una descripción accesible del elemento -->
+    <button id="saltar">Saltar intro</button>
+    <div id="fundido"></div>
 
-            <div id="hud" class="hud">
-                Elige destino y fecha de lanzamiento
-            </div>
-            <!-- HUD (Head-Up Display): muestra información sobre la misión
-                 directamente sobre el mapa, como mensajes y datos de vuelo -->
+    <script>
+        /* =====================================================
+           CONFIGURACIÓN: cambia aquí lo que necesites
+           ===================================================== */
+        const CONFIG = {
+            GAME_URL: 'PaginaInicio.html',      // Página de tu juego (ruta relativa o completa)
+            CUENTA: 3,                   // Segundos de cuenta regresiva
+            ALTITUD_ESCAPE: 10000,       // Distancia de subida antes de pasar al juego
+            ACELERACION: 280,            // Qué tan rápido acelera el cohete (px/s²)
+            SONIDO: true,                // Rugido de motor (se activa al pulsar DESPEGAR)
+            SALTAR_AUTOMATICO: false,    // true = si ya vio la intro en esta sesión, va directo al juego
+            CLAVE_SESION: 'introVista'
+        };
 
-        </section>
+        /* =====================================================
+           REFERENCIAS Y ESTADO
+           ===================================================== */
+        const canvas = document.getElementById('escena');
+        const ctx = canvas.getContext('2d');
+        const elInicio = document.getElementById('inicio');
+        const elCuenta = document.getElementById('cuenta');
+        const elHud = document.getElementById('hud');
+        const elAltitud = document.getElementById('altitud');
+        const elFundido = document.getElementById('fundido');
+        const btnDespegar = document.getElementById('btnDespegar');
+        const btnSaltar = document.getElementById('saltar');
 
-        <aside class="panel">
-        <!-- Panel lateral que contiene los controles y datos de la misión -->
+        const reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-            <header class="top">
-                <h1>Misión Orbital</h1>
-                <!-- Título principal de la aplicación -->
-                <a href="SaladeControlDeMisiones.html" class="btn-nav">Sistema de control→</a>
-                <div class="modes" role="group" aria-label="Modo de juego">
-                    <button id="m-kid" type="button" aria-pressed="true">Explorador</button>
-                    <button id="m-eng" type="button" aria-pressed="false">Ingeniero</button>
-                </div>
-                <!-- Botones para cambiar entre el modo simple (niños) y el modo técnico -->
-            </header>
+        let estado = 'IDLE'; // IDLE -> COUNTDOWN -> LIFTOFF -> DONE
+        let ancho = 0, alto = 0;
+        let tiempo = 0;          // segundos desde que empezó la cuenta
+        let ultimoNumero = null;
+        let altitud = 0;         // píxeles recorridos hacia arriba
+        let velocidad = 0;
+        let temblorX = 0;
+        let particulas = [];
+        let estrellas = [];
+        let yendoAlJuego = false;
+        let nubes = [];
+        let reloj = 0;           // segundos totales (parpadeo de estrellas, deriva de nubes)
+        let fugaz = null;        // estrella fugaz activa
 
-            <p id="hint" class="hint" role="status"></p>
-            <!-- Pista dinámica: learn.js escribe aquí qué hacer a continuación -->
+        const cohete = { x: 0, ancho: 34, alto: 88 };
 
-            <label>Destino
-                <select id="dest"></select>
-            </label>
-            <!-- Permite seleccionar el planeta o destino de la misión.
-                 El select se encuentra vacío inicialmente porque JavaScript
-                 puede agregar las opciones dinámicamente.
+        /* =====================================================
+           SESIÓN: saltar la intro si ya se vio
+           ===================================================== */
+        function yaVista() {
+            try { return sessionStorage.getItem(CONFIG.CLAVE_SESION) === '1'; }
+            catch (e) { return false; }
+        }
+        function marcarVista() {
+            try { sessionStorage.setItem(CONFIG.CLAVE_SESION, '1'); } catch (e) {}
+        }
 
-                 id="dest" permite acceder al selector desde JavaScript -->
+        if (CONFIG.SALTAR_AUTOMATICO && yaVista()) {
+            location.replace(CONFIG.GAME_URL);
+        }
 
-            <label><span>Fecha de lanzamiento <button class="term" type="button" data-term="ventana" aria-label="Explicar: ventana">?</button></span>
-                <input type="date" id="date">
-            </label>
-            <!-- Campo para seleccionar la fecha de lanzamiento.
-                 input type="date" muestra un selector de fechas -->
+        // Precarga del juego para que abra más rápido al llegar
+        (function precargar() {
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = CONFIG.GAME_URL;
+            document.head.appendChild(link);
+        })();
 
-            <div class="row">
-            <!-- Agrupa horizontalmente los botones de control de fechas -->
+        /* =====================================================
+           CANVAS (nítido en pantallas retina y celulares)
+           ===================================================== */
+        function redimensionar() {
+            const dpr = window.devicePixelRatio || 1;
+            ancho = window.innerWidth;
+            alto = window.innerHeight;
+            canvas.width = Math.floor(ancho * dpr);
+            canvas.height = Math.floor(alto * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            cohete.x = ancho / 2;
 
-                <button id="prev" type="button">−30 días</button>
-                <!-- Botón que permite retroceder 30 días en la fecha seleccionada -->
+            estrellas = [];
+            const colores = ['255,255,255', '255,255,255', '190,210,255', '255,226,190'];
+            for (let i = 0; i < 150; i++) {
+                const grande = Math.random() < 0.08;
+                estrellas.push({
+                    x: Math.random() * ancho,
+                    y: Math.random() * alto,
+                    r: grande ? Math.random() * 0.9 + 1.5 : Math.random() * 1.1 + 0.3,
+                    c: colores[Math.floor(Math.random() * colores.length)],
+                    br: Math.random() * 0.5 + 0.5,
+                    fase: Math.random() * Math.PI * 2,
+                    vel: Math.random() * 2 + 0.8,
+                    brillo: grande
+                });
+            }
 
-                <button id="next" type="button">+30 días</button>
-                <!-- Botón que permite avanzar 30 días en la fecha seleccionada -->
+            nubes = [];
+            for (let i = 0; i < 30; i++) {
+                const frente = i < 5;
+                const n = 5 + Math.floor(Math.random() * 3);
+                const puffs = [];
+                for (let k = 0; k < n; k++) {
+                    const u = k / (n - 1);
+                    const arco = Math.sin(u * Math.PI);
+                    puffs.push({
+                        dx: (k - (n - 1) / 2) * 28 + (Math.random() * 10 - 5),
+                        dy: -arco * 12 + (Math.random() * 6 - 3),
+                        r: 20 + arco * 16 + Math.random() * 8
+                    });
+                }
+                nubes.push({
+                    x: Math.random() * (ancho + 400),
+                    h: frente ? 500 + Math.random() * 3500 : 200 + Math.random() * 4200,
+                    z: frente ? 1 : 0.6 + Math.random() * 0.4,
+                    s: frente ? 1.6 + Math.random() * 0.8 : 0.6 + Math.random() * 1.1,
+                    vel: 6 + Math.random() * 16,
+                    alfa: frente ? 0.3 : 0.5 + Math.random() * 0.35,
+                    frente: frente,
+                    puffs: puffs
+                });
+            }
+        }
+        window.addEventListener('resize', redimensionar);
 
-                <button id="window" type="button">Mejor ventana</button>
-                <!-- Botón que permite buscar la mejor ventana de lanzamiento
-                     según las condiciones orbitales -->
+        /* =====================================================
+           POSICIONES (cohete en plataforma -> cámara que lo sigue)
+           ===================================================== */
+        function sueloBase() { return alto * 0.82; }
+        function offsetSuelo() { return cohete.alto / 2 + 20; }
+        function cohetePlataformaY() { return sueloBase() - offsetSuelo(); }
+        function objetivoCamaraY() { return alto * 0.55; }
 
-            </div>
+        function cohetePosY() {
+            return Math.max(objetivoCamaraY(), cohetePlataformaY() - altitud);
+        }
+        function sueloY() {
+            return cohetePosY() + altitud + offsetSuelo();
+        }
 
-            <label class="kid"><span>Tamaño del tanque</span>
-                <input id="tank" type="range" min="1" max="10" value="5">
-                <output id="tank-out">5 de 10</output>
-            </label>
-            <!-- Control simple del modo Explorador: cada nivel equivale a 100 t de propelente.
-                 learn.js escribe ese valor en el campo "prop" del modo Ingeniero -->
+        /* =====================================================
+           SONIDO (opcional, generado con Web Audio, sin archivos)
+           ===================================================== */
+        let audio = null;
 
-            <fieldset class="eng">
-            <!-- Agrupa los parámetros relacionados con el cohete (solo modo Ingeniero) -->
+        function iniciarSonido() {
+            if (!CONFIG.SONIDO) return;
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                const ac = new AC();
+                const largo = ac.sampleRate * 2;
+                const buffer = ac.createBuffer(1, largo, ac.sampleRate);
+                const datos = buffer.getChannelData(0);
+                let previo = 0;
+                for (let i = 0; i < largo; i++) {
+                    const blanco = Math.random() * 2 - 1;
+                    previo = (previo + 0.02 * blanco) / 1.02;
+                    datos[i] = previo * 3.5;
+                }
+                const fuente = ac.createBufferSource();
+                fuente.buffer = buffer;
+                fuente.loop = true;
+                const filtro = ac.createBiquadFilter();
+                filtro.type = 'lowpass';
+                filtro.frequency.value = 150;
+                const ganancia = ac.createGain();
+                ganancia.gain.value = 0;
+                fuente.connect(filtro);
+                filtro.connect(ganancia);
+                ganancia.connect(ac.destination);
+                fuente.start();
+                audio = { ac, filtro, ganancia };
+            } catch (e) {
+                audio = null;
+            }
+        }
 
-                <legend>Cohete</legend>
-                <!-- Título del grupo de parámetros -->
+        // intensidad de 0 a 1
+        function ajustarSonido(intensidad) {
+            if (!audio) return;
+            const t = audio.ac.currentTime;
+            audio.ganancia.gain.setTargetAtTime(0.7 * intensidad, t, 0.25);
+            audio.filtro.frequency.setTargetAtTime(150 + intensidad * 750, t, 0.25);
+        }
 
-                <label><span>Isp (s) <button class="term" type="button" data-term="isp" aria-label="Explicar: isp">?</button></span>
-                    <input id="isp" type="number" value="450" min="200" max="1000">
-                </label>
-                <!-- Permite introducir el impulso específico del motor.
-                     Se mide en segundos y representa la eficiencia del motor.
+        /* =====================================================
+           PARTÍCULAS (fuego y humo)
+           ===================================================== */
+        function emitir(intensidad) {
+            const cantidad = Math.ceil(2 * intensidad);
+            const baseX = cohete.x + temblorX;
+            const baseY = cohetePosY() + cohete.alto / 2 + 12;
+            const cercaDelSuelo = altitud < 300;
 
-                     value="450": valor inicial.
-                     min="200": valor mínimo permitido.
-                     max="1000": valor máximo permitido -->
+            for (let i = 0; i < cantidad; i++) {
+                // Fuego
+                const vidaFuego = 0.5 + Math.random() * 0.4;
+                particulas.push({
+                    tipo: 'fuego',
+                    x: baseX + (Math.random() * 8 - 4),
+                    y: baseY,
+                    vx: (Math.random() * 2 - 1) * 55,
+                    vy: 280 + Math.random() * 220 + velocidad * 0.15,
+                    vida: vidaFuego, vidaMax: vidaFuego,
+                    color: Math.random() > 0.5 ? '255,140,40' : '255,205,70',
+                    tam: Math.random() * 5 + 3
+                });
+                // Humo
+                const vidaHumo = 1.1 + Math.random() * 0.7;
+                particulas.push({
+                    tipo: 'humo',
+                    x: baseX + (Math.random() * 20 - 10),
+                    y: baseY + 8,
+                    vx: (Math.random() * 2 - 1) * (cercaDelSuelo ? 200 : 70),
+                    vy: 120 + Math.random() * 120,
+                    vida: vidaHumo, vidaMax: vidaHumo,
+                    color: '226,232,240',
+                    tam: Math.random() * 9 + 5
+                });
+            }
+        }
 
-                <label><span>Masa seca (t) <button class="term" type="button" data-term="masaseca" aria-label="Explicar: masaseca">?</button></span>
-                    <input id="dry" type="number" value="20" min="1">
-                </label>
-                <!-- Permite introducir la masa del cohete sin combustible.
-                     Se expresa en toneladas.
-                     value="20" establece la masa inicial -->
+        function actualizarParticulas(dt, desplazamientoCamara) {
+            for (let i = particulas.length - 1; i >= 0; i--) {
+                const p = particulas[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt + desplazamientoCamara;
+                p.vida -= dt;
+                if (p.vida <= 0) particulas.splice(i, 1);
+            }
+        }
 
-                <label><span>Propelente (t) <button class="term" type="button" data-term="propelente" aria-label="Explicar: propelente">?</button></span>
-                    <input id="prop" type="number" value="500" min="1">
-                </label>
-                <!-- Permite establecer la cantidad de combustible o propelente.
-                     Se expresa en toneladas.
-                     value="500" establece la cantidad inicial -->
+        /* =====================================================
+           CUENTA REGRESIVA
+           ===================================================== */
+        function mostrarTexto(texto, esPalabra) {
+            elCuenta.textContent = texto;
+            elCuenta.classList.toggle('texto', !!esPalabra);
+            elCuenta.classList.remove('pulso');
+            void elCuenta.offsetWidth; // reinicia la animación
+            if (!reducirMovimiento) elCuenta.classList.add('pulso');
+            elCuenta.classList.remove('oculto');
+        }
 
-                <label>Carga útil (t)
-                    <input id="pay" type="number" value="5" min="0.1" step="0.1">
-                </label>
-                <!-- Permite introducir la masa de la carga útil que transportará
-                     el cohete, por ejemplo, un satélite o instrumentos científicos.
+        function despegar() {
+            if (estado !== 'IDLE') return;
+            estado = 'COUNTDOWN';
+            tiempo = 0;
+            ultimoNumero = null;
+            elInicio.classList.add('oculto');
+            iniciarSonido();
+            ajustarSonido(0.12);
+        }
 
-                     value="5": valor inicial de cinco toneladas.
-                     min="0.1": valor mínimo permitido.
-                     step="0.1": permite modificar el valor en incrementos de 0.1 -->
+        function irAlJuego() {
+            if (yendoAlJuego) return;
+            yendoAlJuego = true;
+            estado = 'DONE';
+            marcarVista();
+            ajustarSonido(0);
+            elFundido.classList.add('visible');
+            setTimeout(() => { location.href = CONFIG.GAME_URL; }, 800);
+        }
 
-            </fieldset>
+        btnDespegar.addEventListener('click', despegar);
+        btnSaltar.addEventListener('click', irAlJuego);
+        window.addEventListener('keydown', (e) => {
+            if ((e.code === 'Space' || e.code === 'Enter') && estado === 'IDLE') {
+                e.preventDefault();
+                despegar();
+            }
+        });
 
-            <div class="gauge">
-                <progress id="gauge" max="100" value="0"></progress>
-                <span id="gauge-label"></span>
-            </div>
-            <!-- Medidor de combustible: porcentaje del Δv necesario que tiene el cohete -->
+        /* =====================================================
+           ACTUALIZACIÓN POR FOTOGRAMA
+           ===================================================== */
+        function actualizar(dt) {
+            reloj += dt;
+            const sueloAntes = sueloY();
 
-            <dl class="readout eng">
-            <!-- Lista de descripción que muestra los resultados de los cálculos -->
+            if (estado === 'COUNTDOWN') {
+                tiempo += dt;
 
-                <dt>Δv disponible / necesario <button class="term" type="button" data-term="dv" aria-label="Explicar: dv">?</button></dt>
-                <dd id="r-dv">–</dd>
-                <!-- Δv (Delta-v) representa el cambio de velocidad que puede
-                     proporcionar el cohete.
+                const restante = Math.ceil(CONFIG.CUENTA - tiempo);
+                if (restante > 0 && restante !== ultimoNumero) {
+                    ultimoNumero = restante;
+                    mostrarTexto(String(restante), false);
+                }
 
-                     El elemento dd muestra el resultado calculado por JavaScript.
-                     Inicialmente aparece un guion -->
+                const avance = Math.min(tiempo / CONFIG.CUENTA, 1);
+                temblorX = reducirMovimiento ? 0 : (Math.random() - 0.5) * (1 + avance * 5);
 
-                <dt>Tiempo de vuelo</dt>
-                <dd id="r-days">–</dd>
-                <!-- Muestra la duración estimada del viaje espacial.
-                     JavaScript actualizará este valor -->
+                if (tiempo > CONFIG.CUENTA - 1.5) {
+                    emitir(0.5);
+                    ajustarSonido(0.35);
+                }
 
-                <dt>Ventana de lanzamiento</dt>
-                <dd id="r-win">–</dd>
-                <!-- Muestra información sobre las fechas favorables para lanzar
-                     el cohete, según la posición orbital de los planetas -->
+                if (tiempo >= CONFIG.CUENTA) {
+                    estado = 'LIFTOFF';
+                    mostrarTexto('¡Despegue!', true);
+                    elHud.classList.remove('oculto');
+                    setTimeout(() => elCuenta.classList.add('oculto'), 1200);
+                }
+            } else if (estado === 'LIFTOFF') {
+                velocidad += CONFIG.ACELERACION * dt;
+                altitud += velocidad * dt;
+                temblorX = reducirMovimiento ? 0 : (Math.random() - 0.5) * 2;
 
-            </dl>
+                emitir(1);
+                ajustarSonido(Math.min(0.6 + altitud / CONFIG.ALTITUD_ESCAPE, 1));
+                elAltitud.textContent = Math.floor(altitud / 100) + ' km';
 
-            <button id="launch" class="primary" type="button">Lanzar</button>
-            <!-- Botón principal que ejecuta la simulación del lanzamiento.
-                 La clase primary permite darle un estilo visual destacado -->
+                if (altitud >= CONFIG.ALTITUD_ESCAPE) irAlJuego();
+            }
 
-            <p id="msg" role="status"></p>
-            <!-- Espacio destinado a mostrar mensajes al usuario.
-                 Por ejemplo: lanzamiento exitoso, misión no viable o errores.
+            // Estrella fugaz ocasional cuando ya hay cielo oscuro
+            const prog = Math.min(altitud / CONFIG.ALTITUD_ESCAPE, 1);
+            if (!reducirMovimiento && !fugaz && prog > 0.3 && Math.random() < dt * 0.35) {
+                fugaz = {
+                    x: ancho * (0.35 + Math.random() * 0.65),
+                    y: alto * (0.05 + Math.random() * 0.3),
+                    vx: -(500 + Math.random() * 300),
+                    vy: 250 + Math.random() * 150,
+                    vida: 0.7, vidaMax: 0.7
+                };
+            }
+            if (fugaz) {
+                fugaz.x += fugaz.vx * dt;
+                fugaz.y += fugaz.vy * dt;
+                fugaz.vida -= dt;
+                if (fugaz.vida <= 0) fugaz = null;
+            }
 
-                 role="status" permite que los lectores de pantalla
-                 anuncien los cambios de contenido -->
+            // La cámara sigue al cohete: las partículas bajan con el suelo
+            const desplazamientoCamara = sueloY() - sueloAntes;
+            actualizarParticulas(dt, desplazamientoCamara);
+        }
 
-            <details id="calc">
-                <summary>Ver el cálculo paso a paso</summary>
-                <ol id="steps"></ol>
-                <button class="term wide" type="button" data-term="sci" aria-label="Explicar: sci">¿Qué es 10ⁿ?</button>
-            </details>
-            <!-- Cálculo explicado: learn.js lo rellena con frases (niños) o fórmulas con notación científica -->
+        /* =====================================================
+           DIBUJO
+           ===================================================== */
+        /* ---------- Utilidades de color ---------- */
+        function limitar(v, a, b) { return Math.max(a, Math.min(b, v)); }
+        function suavizar(t) { t = limitar(t, 0, 1); return t * t * (3 - 2 * t); }
+        function mezcla(a, b, t) {
+            return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+        }
+        function rgb(c, a) {
+            return 'rgba(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ',' + (a === undefined ? 1 : a) + ')';
+        }
 
-            <div class="row">
-                <button id="gl-all" type="button">Glosario</button>
-                <button id="apod" type="button">Foto del día (APOD)</button>
-            </div>
-            <!-- Botón que permite solicitar la fotografía astronómica del día
-                 mediante la API de la NASA -->
+        // Amanecer abajo, espacio profundo arriba
+        const CIELO_SUELO = { arriba: [26, 54, 128], medio: [96, 142, 208], horizonte: [255, 188, 138] };
+        const CIELO_ESPACIO = { arriba: [1, 2, 8], medio: [4, 7, 22], horizonte: [12, 14, 40] };
 
-            <div id="apodbox"></div>
-            <!-- Contenedor donde JavaScript puede insertar la fotografía
-                 y la información obtenida de la API de la NASA -->
+        function motorEncendido() {
+            return estado === 'LIFTOFF' || estado === 'DONE' ||
+                   (estado === 'COUNTDOWN' && tiempo > CONFIG.CUENTA - 1.5);
+        }
 
-        </aside>
+        /* ---------- Cielo ---------- */
+        function dibujarCielo(progreso, gy) {
+            const t = suavizar(progreso);
+            const hy = Math.max(gy, alto * 0.6);
+            const g = ctx.createLinearGradient(0, 0, 0, hy);
+            g.addColorStop(0, rgb(mezcla(CIELO_SUELO.arriba, CIELO_ESPACIO.arriba, t)));
+            g.addColorStop(0.6, rgb(mezcla(CIELO_SUELO.medio, CIELO_ESPACIO.medio, t)));
+            g.addColorStop(1, rgb(mezcla(CIELO_SUELO.horizonte, CIELO_ESPACIO.horizonte, t)));
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, ancho, alto);
+        }
 
-    </main>
+        function dibujarNebulosas(progreso) {
+            const a = suavizar((progreso - 0.45) * 2.2) * 0.2;
+            if (a <= 0.005) return;
+            const manchas = [
+                { x: 0.22, y: 0.28, r: 0.55, c: '110,80,200' },
+                { x: 0.82, y: 0.62, r: 0.5, c: '50,110,200' },
+                { x: 0.5, y: 0.1, r: 0.4, c: '190,80,170' }
+            ];
+            const m = Math.max(ancho, alto);
+            for (const n of manchas) {
+                const x = n.x * ancho, y = n.y * alto, r = n.r * m;
+                const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+                g.addColorStop(0, 'rgba(' + n.c + ',' + a + ')');
+                g.addColorStop(1, 'rgba(' + n.c + ',0)');
+                ctx.fillStyle = g;
+                ctx.fillRect(x - r, y - r, r * 2, r * 2);
+            }
+        }
 
-    <dialog id="glossary">
-        <div id="gl-body"></div>
-        <button id="gl-close" type="button">Cerrar</button>
-    </dialog>
-    <!-- Ventana emergente del glosario: siglas en idioma original y español, versión fácil y técnica -->
+        function dibujarEstrellas(progreso) {
+            if (progreso < 0.05) return;
+            for (const s of estrellas) {
+                const base = limitar(progreso * 2.2 - 0.2 - (s.y / alto) * 0.6, 0, 1);
+                if (base <= 0.01) continue;
+                const brillo = reducirMovimiento ? 1 : 0.65 + 0.35 * Math.sin(reloj * s.vel + s.fase);
+                const a = base * brillo * s.br;
+                ctx.fillStyle = 'rgba(' + s.c + ',' + a + ')';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+                if (s.brillo && a > 0.3) {
+                    ctx.strokeStyle = 'rgba(' + s.c + ',' + (a * 0.5) + ')';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(s.x - s.r * 4, s.y);
+                    ctx.lineTo(s.x + s.r * 4, s.y);
+                    ctx.moveTo(s.x, s.y - s.r * 4);
+                    ctx.lineTo(s.x, s.y + s.r * 4);
+                    ctx.stroke();
+                }
+            }
+        }
 
-    <!-- Archivos JavaScript que contienen la lógica de la aplicación.
-         Se cargan al final del body para que los elementos HTML
-         estén disponibles cuando se ejecuten los scripts -->
+        function dibujarFugaz() {
+            if (!fugaz) return;
+            const a = fugaz.vida / fugaz.vidaMax;
+            const lx = fugaz.x - fugaz.vx * 0.14;
+            const ly = fugaz.y - fugaz.vy * 0.14;
+            const g = ctx.createLinearGradient(fugaz.x, fugaz.y, lx, ly);
+            g.addColorStop(0, 'rgba(255,255,255,' + a + ')');
+            g.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.strokeStyle = g;
+            ctx.lineWidth = 1.8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(fugaz.x, fugaz.y);
+            ctx.lineTo(lx, ly);
+            ctx.stroke();
+            ctx.lineCap = 'butt';
+        }
 
-    <script src="js/config.js"></script>
-    <!-- Contiene configuraciones generales de la aplicación -->
+        function dibujarSol(progreso, scroll) {
+            const alfa = 1 - suavizar(progreso * 1.7);
+            if (alfa <= 0.01) return;
+            const sx = ancho * 0.76;
+            const sy = sueloBase() - alto * 0.05 + scroll * 0.3;
+            const r = Math.min(ancho, alto) * 0.07;
+            const R = r * 6;
+            const g = ctx.createRadialGradient(sx, sy, r * 0.2, sx, sy, R);
+            g.addColorStop(0, 'rgba(255,236,190,' + (0.9 * alfa) + ')');
+            g.addColorStop(0.25, 'rgba(255,190,120,' + (0.45 * alfa) + ')');
+            g.addColorStop(1, 'rgba(255,160,100,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(sx - R, sy - R, R * 2, R * 2);
+            ctx.fillStyle = 'rgba(255,248,225,' + alfa + ')';
+            ctx.beginPath();
+            ctx.arc(sx, sy, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
-    <script src="js/data.js"></script>
-    <!-- Contiene los datos necesarios para la simulación,
-         como información de los planetas y sus características orbitales -->
+               function dibujarLuna(progreso) {
+            const k = suavizar((progreso - 0.5) * 2);
+            if (k <= 0.01) return;
+            const r = 14 + 56 * k;          // más grande que Marte: la Luna se ve cerca
+            const mx = ancho * 0.78;
+            const my = alto * 0.2;
 
-    <script src="js/physics.js"></script>
-    <!-- Contiene las funciones matemáticas y físicas utilizadas
-         para calcular velocidades, Δv y otros parámetros de la misión -->
+            ctx.save();
+            ctx.globalAlpha = k;
 
-    <script src="js/api.js"></script>
-    <!-- Gestiona las conexiones con servicios externos,
-         como la API de la NASA -->
+            // Halo plateado
+            const halo = ctx.createRadialGradient(mx, my, r * 0.8, mx, my, r * 2.2);
+            halo.addColorStop(0, 'rgba(200,220,255,0.25)');
+            halo.addColorStop(1, 'rgba(200,220,255,0)');
+            ctx.fillStyle = halo;
+            ctx.fillRect(mx - r * 2.2, my - r * 2.2, r * 4.4, r * 4.4);
 
-    <script src="js/glossary.js"></script>
-    <!-- Textos del glosario (siglas, idioma original, explicaciones) -->
+            // Disco gris con luz desde arriba a la izquierda
+            const g = ctx.createRadialGradient(mx - r * 0.4, my - r * 0.4, r * 0.1, mx, my, r);
+            g.addColorStop(0, '#fbfbf7');
+            g.addColorStop(0.55, '#c9ccd2');
+            g.addColorStop(1, '#4b4f5a');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(mx, my, r, 0, Math.PI * 2);
+            ctx.fill();
 
-    <script src="js/learn.js"></script>
-    <!-- Capa educativa: modos Explorador/Ingeniero, pistas y cálculo paso a paso.
-         Debe cargarse antes de main.js -->
+            // Mares y cráteres (recortados dentro del disco)
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(mx, my, r, 0, Math.PI * 2);
+            ctx.clip();
 
-    <script src="js/map.js"></script>
-    <!-- Se encarga de dibujar y actualizar el mapa del sistema solar
-         utilizando el elemento canvas -->
+            ctx.fillStyle = 'rgba(90,95,108,0.45)';
+            ctx.beginPath(); ctx.ellipse(mx - r * 0.25, my - r * 0.1, r * 0.4, r * 0.28, 0.4, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(mx + r * 0.3, my + r * 0.15, r * 0.3, r * 0.2, -0.3, 0, Math.PI * 2); ctx.fill();
 
-    <script src="js/main.js"></script>
-    <!-- Archivo principal que coordina la aplicación.
-         Gestiona los eventos de los botones, los controles,
-         los cálculos y la actualización de la interfaz -->
-        
+            const crateres = [[-0.35, -0.35, 0.14], [0.3, 0.3, 0.18], [-0.1, 0.55, 0.1], [0.5, -0.3, 0.09], [-0.6, 0.2, 0.08]];
+            for (const c of crateres) {
+                const cx = mx + c[0] * r, cy = my + c[1] * r, cr = c[2] * r;
+                ctx.fillStyle = 'rgba(70,74,86,0.35)';
+                ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.arc(cx - cr * 0.1, cy - cr * 0.1, cr, Math.PI * 0.9, Math.PI * 1.6); ctx.stroke();
+            }
+            ctx.restore();
 
+            ctx.restore();
+        }
+
+        // Curvatura de la Tierra con halo de atmósfera
+        function dibujarTierra(progreso) {
+            const a = suavizar((progreso - 0.04) / 0.12) * (1 - suavizar((progreso - 0.55) / 0.35));
+            if (a <= 0.01) return;
+            const R = ancho * 1.8;
+            const cx = ancho / 2;
+            const cy = alto * (0.93 + 0.22 * progreso) + R;
+
+            ctx.save();
+            ctx.globalAlpha = a;
+
+            const halo = ctx.createRadialGradient(cx, cy, R - 6, cx, cy, R + 46);
+            halo.addColorStop(0, 'rgba(150,205,255,0.9)');
+            halo.addColorStop(0.2, 'rgba(80,150,255,0.45)');
+            halo.addColorStop(1, 'rgba(40,90,255,0)');
+            ctx.fillStyle = halo;
+            ctx.beginPath();
+            ctx.arc(cx, cy, R + 46, 0, Math.PI * 2);
+            ctx.fill();
+
+            const g = ctx.createLinearGradient(0, cy - R, 0, cy - R + alto * 0.35);
+            g.addColorStop(0, '#2a6fb5');
+            g.addColorStop(0.4, '#0b3470');
+            g.addColorStop(1, '#04142f');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.fillStyle = 'rgba(255,255,255,0.16)';
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.ellipse(cx + (i - 1.5) * ancho * 0.22, cy - R + 18 + i * 14, ancho * 0.16, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        /* ---------- Nubes ---------- */
+        function dibujarNubes(frente, progreso, gy) {
+            const vida = 1 - suavizar(progreso * 2.2);
+            if (vida <= 0.01) return;
+            for (const n of nubes) {
+                if (n.frente !== frente) continue;
+                const cy = gy - n.h * n.z;
+                const margen = 140 * n.s;
+                if (cy < -margen || cy > alto + margen) continue;
+                const cx = ((n.x + reloj * n.vel) % (ancho + 400)) - 200;
+                const a = n.alfa * vida;
+
+                // Parte inferior con tinte cálido del amanecer
+                for (const p of n.puffs) {
+                    const px = cx + p.dx * n.s;
+                    const r = p.r * n.s;
+                    const py = cy + p.dy * n.s + r * 0.35;
+                    const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+                    g.addColorStop(0, 'rgba(255,176,150,' + (a * 0.55) + ')');
+                    g.addColorStop(1, 'rgba(255,176,150,0)');
+                    ctx.fillStyle = g;
+                    ctx.fillRect(px - r, py - r, r * 2, r * 2);
+                }
+                // Parte superior iluminada
+                for (const p of n.puffs) {
+                    const px = cx + p.dx * n.s;
+                    const py = cy + p.dy * n.s;
+                    const r = p.r * n.s;
+                    const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+                    g.addColorStop(0, 'rgba(255,255,255,' + a + ')');
+                    g.addColorStop(1, 'rgba(255,255,255,0)');
+                    ctx.fillStyle = g;
+                    ctx.fillRect(px - r, py - r, r * 2, r * 2);
+                }
+            }
+        }
+
+        /* ---------- Paisaje ---------- */
+        function dibujarColinas(progreso, scroll) {
+            const luz = 1 - suavizar(progreso * 1.5);
+            if (luz <= 0.01) return;
+            const capas = [
+                { k: 0.65, amp: 54, f: 0.0045, fase: 1.3, c: [112, 104, 160] },
+                { k: 0.85, amp: 36, f: 0.0085, fase: 4.2, c: [64, 78, 128] }
+            ];
+            for (const capa of capas) {
+                const yBase = sueloBase() + scroll * capa.k;
+                if (yBase - capa.amp * 1.6 > alto) continue;
+                ctx.fillStyle = rgb(mezcla(capa.c, [8, 12, 30], progreso), luz);
+                ctx.beginPath();
+                ctx.moveTo(0, alto + 20);
+                for (let x = 0; x <= ancho + 8; x += 8) {
+                    const h = capa.amp * (0.55 + 0.3 * Math.sin(x * capa.f + capa.fase) +
+                                          0.15 * Math.sin(x * capa.f * 2.7 + capa.fase * 1.9));
+                    ctx.lineTo(x, yBase - h);
+                }
+                ctx.lineTo(ancho, alto + 20);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function dibujarTorre(gy) {
+            const H = cohete.alto + 62;
+            const tx = cohete.x - 62;
+            const base = gy - 10;
+
+            // Rieles
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(tx - 9, base); ctx.lineTo(tx - 9, base - H);
+            ctx.moveTo(tx + 9, base); ctx.lineTo(tx + 9, base - H);
+            ctx.stroke();
+
+            // Diagonales
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            for (let y = 0; y < H - 14; y += 14) {
+                const y0 = base - y;
+                const y1 = base - y - 14;
+                const izq = (y / 14) % 2 === 0;
+                ctx.moveTo(izq ? tx - 9 : tx + 9, y0);
+                ctx.lineTo(izq ? tx + 9 : tx - 9, y1);
+                ctx.moveTo(tx - 9, y1);
+                ctx.lineTo(tx + 9, y1);
+            }
+            ctx.stroke();
+
+            // Brazo de acceso: se retira poco antes del despegue
+            let ext = 1;
+            if (estado === 'COUNTDOWN') ext = limitar(1 - (tiempo - 0.4) / 1.2, 0, 1);
+            else if (estado !== 'IDLE') ext = 0;
+            if (ext > 0) {
+                const largo = (cohete.x - cohete.ancho / 2 - 2) - (tx + 9);
+                const ay = base - H * 0.55 - 2;
+                ctx.fillStyle = '#64748b';
+                ctx.fillRect(tx + 9, ay, largo * ext, 4);
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(tx + 9, ay, largo * ext, 1.2);
+            }
+
+            // Luz de aviso parpadeante
+            const pulso = 0.5 + 0.5 * Math.sin(reloj * 4);
+            ctx.fillStyle = 'rgba(255,60,60,' + (0.25 + 0.2 * pulso) + ')';
+            ctx.beginPath(); ctx.arc(tx, base - H - 5, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(255,90,90,' + (0.6 + 0.4 * pulso) + ')';
+            ctx.beginPath(); ctx.arc(tx, base - H - 5, 3, 0, Math.PI * 2); ctx.fill();
+        }
+
+        function dibujarSuelo(gy, progreso) {
+            if (gy >= alto + 4) return;
+            const luz = 1 - suavizar(progreso * 1.5);
+            const oscuridad = 1 - luz;
+
+            const g = ctx.createLinearGradient(0, gy, 0, alto);
+            g.addColorStop(0, rgb(mezcla([38, 92, 78], [6, 12, 18], oscuridad)));
+            g.addColorStop(1, rgb(mezcla([14, 46, 46], [4, 8, 12], oscuridad)));
+            ctx.fillStyle = g;
+            ctx.fillRect(0, gy, ancho, alto - gy + 4);
+
+            // Borde iluminado por el amanecer
+            ctx.fillStyle = 'rgba(255,200,150,' + (0.35 * luz) + ')';
+            ctx.fillRect(0, gy, ancho, 2);
+
+            // Plataforma
+            const px = cohete.x;
+            ctx.fillStyle = '#3b4658';
+            ctx.fillRect(px - 75, gy - 10, 150, 10);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(px - 75, gy - 10, 150, 2);
+            for (let i = 0; i < 10; i++) {
+                ctx.fillStyle = i % 2 ? '#111827' : '#facc15';
+                ctx.fillRect(px - 75 + i * 15, gy - 4, 15, 4);
+            }
+
+            dibujarTorre(gy);
+        }
+
+        // Luz del motor sobre la plataforma al encender
+        function dibujarResplandorSuelo(gy) {
+            if (!motorEncendido() || altitud > 500 || gy > alto + 100) return;
+            const a = (1 - altitud / 500) * (estado === 'COUNTDOWN' ? 0.5 : 1);
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.translate(cohete.x, gy - 6);
+            ctx.scale(1, 0.35);
+            const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 190);
+            g.addColorStop(0, 'rgba(255,170,80,' + (0.7 * a) + ')');
+            g.addColorStop(1, 'rgba(255,120,40,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(0, 0, 190, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /* ---------- Partículas ---------- */
+        function dibujarParticulas(progreso) {
+            // Humo: se expande y se desvanece (menos visible sin atmósfera)
+            for (const p of particulas) {
+                if (p.tipo !== 'humo') continue;
+                const v = Math.max(p.vida / p.vidaMax, 0);
+                const rad = p.tam * (1 + (1 - v) * 1.4);
+                ctx.fillStyle = 'rgba(' + p.color + ',' + (v * 0.4 * (1 - progreso)) + ')';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, rad, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // Fuego: suma de luz
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (const p of particulas) {
+                if (p.tipo !== 'fuego') continue;
+                const v = Math.max(p.vida / p.vidaMax, 0);
+                ctx.fillStyle = 'rgba(' + p.color + ',' + (v * 0.8) + ')';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.tam * (0.5 + v * 0.7), 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        /* ---------- Cohete ---------- */
+        function dibujarLlama(y0) {
+            const potencia = estado === 'COUNTDOWN' ? 0.45 : 1;
+            const largo = (30 + Math.min(velocidad / 14, 55)) * potencia + Math.random() * 12;
+            const anchoBase = 11 * (0.8 + potencia * 0.2);
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+
+            // Resplandor alrededor de la llama
+            const R = largo * 1.1 + 20;
+            const cy = y0 + largo * 0.25;
+            const g = ctx.createRadialGradient(0, cy, 2, 0, cy, R);
+            g.addColorStop(0, 'rgba(255,200,120,0.55)');
+            g.addColorStop(1, 'rgba(255,120,40,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(-R, cy - R, R * 2, R * 2);
+
+            // Capas de la llama: exterior naranja, media amarilla, núcleo blanco
+            const capas = [
+                ['rgba(255,110,30,0.85)', 1, 1],
+                ['rgba(255,190,70,0.9)', 0.72, 0.7],
+                ['rgba(255,250,225,0.95)', 0.42, 0.45]
+            ];
+            for (const capa of capas) {
+                const L = largo * capa[1];
+                const W = anchoBase * capa[2];
+                ctx.fillStyle = capa[0];
+                ctx.beginPath();
+                ctx.moveTo(-W, y0);
+                ctx.quadraticCurveTo(-W * 1.1, y0 + L * 0.55, 0, y0 + L);
+                ctx.quadraticCurveTo(W * 1.1, y0 + L * 0.55, W, y0);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function dibujarCohete(progreso) {
+            const w = cohete.ancho;
+            const h = cohete.alto;
+            const b = h / 2;
+            const luz = 1 - suavizar(progreso * 1.5);
+
+            // Silueta del cuerpo con nariz ojival
+            function silueta() {
+                ctx.beginPath();
+                ctx.moveTo(-w / 2, b);
+                ctx.lineTo(-w / 2, -b + 8);
+                ctx.bezierCurveTo(-w / 2, -b - 14, -w * 0.22, -b - 30, 0, -b - 38);
+                ctx.bezierCurveTo(w * 0.22, -b - 30, w / 2, -b - 14, w / 2, -b + 8);
+                ctx.lineTo(w / 2, b);
+                ctx.closePath();
+            }
+
+            ctx.save();
+            ctx.translate(cohete.x + temblorX, cohetePosY());
+
+            if (motorEncendido()) dibujarLlama(b + 12);
+
+            // Aletas laterales (la derecha es el espejo de la izquierda)
+            for (const lado of [1, -1]) {
+                ctx.save();
+                ctx.scale(lado, 1);
+                const fg = ctx.createLinearGradient(-w / 2 - 20, 0, -w / 2, 0);
+                fg.addColorStop(0, '#f05252');
+                fg.addColorStop(1, '#7f1d1d');
+                ctx.fillStyle = fg;
+                ctx.beginPath();
+                ctx.moveTo(-w / 2 + 2, b - 44);
+                ctx.lineTo(-w / 2 - 20, b - 10);
+                ctx.lineTo(-w / 2 - 20, b + 4);
+                ctx.lineTo(-w / 2 + 2, b - 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-w / 2 + 2, b - 44);
+                ctx.lineTo(-w / 2 - 20, b - 10);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Cuerpo base
+            silueta();
+            ctx.fillStyle = '#e9eef5';
+            ctx.fill();
+
+            // Detalles recortados dentro de la silueta
+            ctx.save();
+            silueta();
+            ctx.clip();
+
+            ctx.fillStyle = '#d91f2b';                       // nariz
+            ctx.fillRect(-w / 2 - 2, -b - 42, w + 4, 56);
+            ctx.fillStyle = '#16296b';                       // anillo bajo la nariz
+            ctx.fillRect(-w / 2 - 2, -b + 14, w + 4, 4);
+            ctx.fillRect(-w / 2 - 2, 14, w + 4, 4);          // franja azul
+            ctx.fillStyle = '#d91f2b';
+            ctx.fillRect(-w / 2 - 2, 18, w + 4, 4);          // franja roja
+            ctx.fillStyle = '#3a4659';                       // falda del motor
+            ctx.fillRect(-w / 2 - 2, b - 14, w + 4, 16);
+
+            ctx.strokeStyle = 'rgba(15,23,42,0.2)';          // juntas de paneles
+            ctx.lineWidth = 1;
+            for (const y of [8, 26]) {
+                ctx.beginPath();
+                ctx.moveTo(-w / 2, y);
+                ctx.lineTo(w / 2, y);
+                ctx.stroke();
+            }
+
+            // Sombreado cilíndrico
+            const sg = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
+            sg.addColorStop(0, 'rgba(15,23,42,0.35)');
+            sg.addColorStop(0.22, 'rgba(255,255,255,0.25)');
+            sg.addColorStop(0.45, 'rgba(255,255,255,0.35)');
+            sg.addColorStop(0.75, 'rgba(15,23,42,0.1)');
+            sg.addColorStop(1, 'rgba(15,23,42,0.45)');
+            ctx.fillStyle = sg;
+            ctx.fillRect(-w / 2, -b - 42, w, h + 44);
+
+            // Luz cálida del amanecer en el borde derecho
+            ctx.fillStyle = 'rgba(255,200,140,' + (0.4 * luz) + ')';
+            ctx.fillRect(w / 2 - 3, -b - 42, 3, h + 44);
+            ctx.restore();
+
+            // Contorno
+            silueta();
+            ctx.strokeStyle = 'rgba(15,23,42,0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Ventana
+            const aro = ctx.createLinearGradient(-10, -16, 10, 4);
+            aro.addColorStop(0, '#f8fafc');
+            aro.addColorStop(1, '#64748b');
+            ctx.fillStyle = aro;
+            ctx.beginPath();
+            ctx.arc(0, -6, 10, 0, Math.PI * 2);
+            ctx.fill();
+            const cristal = ctx.createRadialGradient(-2, -9, 1, 0, -6, 8);
+            cristal.addColorStop(0, '#7dd3fc');
+            cristal.addColorStop(0.55, '#1d4ed8');
+            cristal.addColorStop(1, '#0b1b4a');
+            ctx.fillStyle = cristal;
+            ctx.beginPath();
+            ctx.arc(0, -6, 7.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.75)';
+            ctx.beginPath();
+            ctx.ellipse(-2.5, -8.5, 2.6, 1.5, -0.6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Aleta central frontal
+            const cg = ctx.createLinearGradient(-5, 0, 5, 0);
+            cg.addColorStop(0, '#7f1d1d');
+            cg.addColorStop(0.5, '#ef4444');
+            cg.addColorStop(1, '#7f1d1d');
+            ctx.fillStyle = cg;
+            ctx.beginPath();
+            ctx.moveTo(-3, b - 18);
+            ctx.lineTo(3, b - 18);
+            ctx.lineTo(5, b + 5);
+            ctx.lineTo(-5, b + 5);
+            ctx.closePath();
+            ctx.fill();
+
+            // Tobera
+            const tg = ctx.createLinearGradient(-12, 0, 12, 0);
+            tg.addColorStop(0, '#1f2937');
+            tg.addColorStop(0.5, '#94a3b8');
+            tg.addColorStop(1, '#1f2937');
+            ctx.fillStyle = tg;
+            ctx.beginPath();
+            ctx.moveTo(-9, b);
+            ctx.lineTo(-12, b + 12);
+            ctx.lineTo(12, b + 12);
+            ctx.lineTo(9, b);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-12, b + 10, 24, 3);
+            if (motorEncendido()) {
+                ctx.fillStyle = 'rgba(255,160,70,0.85)';
+                ctx.beginPath();
+                ctx.ellipse(0, b + 12, 9, 2.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        /* ---------- Escena completa ---------- */
+        function dibujar() {
+            const progreso = Math.min(altitud / CONFIG.ALTITUD_ESCAPE, 1);
+            const gy = sueloY();
+            const scroll = gy - sueloBase();
+
+            dibujarCielo(progreso, gy);
+            dibujarNebulosas(progreso);
+            dibujarEstrellas(progreso);
+            dibujarFugaz();
+            dibujarLuna(progreso);
+            dibujarSol(progreso, scroll);
+            dibujarTierra(progreso);
+            dibujarNubes(false, progreso, gy);
+            dibujarColinas(progreso, scroll);
+            dibujarSuelo(gy, progreso);
+            dibujarResplandorSuelo(gy);
+            dibujarParticulas(progreso);
+            dibujarCohete(progreso);
+            dibujarNubes(true, progreso, gy);   // nubes delanteras: el cohete pasa entre ellas
+        }
+
+        /* =====================================================
+           BUCLE PRINCIPAL
+           ===================================================== */
+        let ultimoTiempo = 0;
+
+        function bucle(ahora) {
+            const dt = Math.min((ahora - ultimoTiempo) / 1000 || 0, 0.05);
+            ultimoTiempo = ahora;
+
+            actualizar(dt);
+            dibujar();
+            requestAnimationFrame(bucle);
+        }
+
+        window.addEventListener('load', () => {
+            redimensionar();
+            requestAnimationFrame((t) => { ultimoTiempo = t; bucle(t); });
+        });
+    </script>
 </body>
 </html>
-<!-- Fin del documento HTML -->
